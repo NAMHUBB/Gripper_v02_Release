@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot name="parallelgripper_urdf_v01">
+
+  <link name="base_link">
+    <inertial>
+      <origin xyz="-0.000444579084561707 -0.000444610907150936 -0.0755696693314903" rpy="0 0 0" />
+      <mass value="0.439912014653114" />
+      <inertia ixx="0.000567196255674673" ixy="0.000117738867338211" ixz="-2.14960794888194E-06"
+               iyy="0.000567196466051731" iyz="-2.14785075594056E-06" izz="0.000701474683035223" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/base_link.glb" /></geometry>
+      <material name=""><color rgba="0.698 0.698 0.698 1" /></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/base_link.glb" /></geometry>
+    </collision>
+  </link>
+
+  <link name="Motor_Link">
+    <inertial>
+      <origin xyz="3.055148517001E-05 -5.55340222101452E-05 -0.00912006152528358" rpy="0 0 0" />
+      <mass value="0.133450467321282" />
+      <inertia ixx="1.47779586283364E-05" ixy="-1.07462343920105E-05" ixz="8.62137203625417E-10"
+               iyy="2.8118671122348E-05" iyz="-1.56701771217827E-09" izz="3.2341270679587E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/Motor_Link.glb" /></geometry>
+      <material name=""><color rgba="0.698 0.698 0.698 1" /></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/Motor_Link.glb" /></geometry>
+    </collision>
+  </link>
+  <joint name="Motor_joint" type="revolute">
+    <origin xyz="0 1.25099664276524E-05 -0.139" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="Motor_Link" />
+    <axis xyz="0 0 -1" />
+    <limit lower="0" upper="0.81" effort="0" velocity="0" />
+  </joint>
+
+  <link name="Gripper1_link">
+    <inertial>
+      <origin xyz="-0.0251576655127445 0.0270743349939395 0.0471197404654572" rpy="0 0 0" />
+      <mass value="0.0639216206656708" />
+      <inertia ixx="3.46401729832417E-05" ixy="1.73539659004351E-06" ixz="6.38448685760897E-06"
+               iyy="3.46401741707638E-05" iyz="-6.74759673488215E-06" izz="1.17759934604075E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/Gripper1_link.glb" /></geometry>
+      <material name=""><color rgba="0.698 0.698 0.698 1" /></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/Gripper1_link.glb" /></geometry>
+    </collision>
+  </link>
+  <joint name="Gripper1_joint" type="prismatic">
+    <origin xyz="-0.017611 0.017753 -0.25291" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="Gripper1_link" />
+    <axis xyz="-0.70711 0.70711 0" />
+    <limit lower="-0.025035" upper="0" effort="0" velocity="0" />
+  </joint>
+
+  <link name="Gipper2_link">
+    <inertial>
+      <origin xyz="0.025157665509298 -0.0270743349973465 0.0471197404654611" rpy="0 0 0" />
+      <mass value="0.0639216206656708" />
+      <inertia ixx="3.46401729832416E-05" ixy="1.73539659004246E-06" ixz="-6.38448685708194E-06"
+               iyy="3.46401741707663E-05" iyz="6.74759673534726E-06" izz="1.17759934604052E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/Gipper2_link.glb" /></geometry>
+      <material name=""><color rgba="0.698 0.698 0.698 1" /></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/Gipper2_link.glb" /></geometry>
+    </collision>
+  </link>
+  <joint name="Gipper2_joint" type="prismatic">
+    <origin xyz="0.01779 -0.017649 -0.25291" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="Gipper2_link" />
+    <axis xyz="0.70711 -0.70711 0" />
+    <limit lower="-0.025035" upper="0" effort="0" velocity="0" />
+  </joint>
+
+  <link name="Rod End Bearing1_link">
+    <inertial>
+      <origin xyz="-0.0298795475437148 0.0196943962654256 -0.00361421993650915" rpy="0 0 0" />
+      <mass value="0.00248577770218743" />
+      <inertia ixx="5.60975101313202E-08" ixy="4.67447382227909E-08" ixz="9.55838908458118E-16"
+               iyy="9.62062034193004E-08" iyz="-6.12178230042667E-16" izz="1.26527926500413E-07" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/Rod End Bearing1_link .glb" /></geometry>
+      <material name=""><color rgba="0.502 0.502 0.502 1" /></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/Rod End Bearing1_link .glb" /></geometry>
+    </collision>
+  </link>
+  <joint name="Rod End Bearing1_joint" type="revolute">
+    <origin xyz="0.0214969276779863 0.0231636230687937 -0.007499999999997" rpy="0 0 0" />
+    <parent link="Motor_Link" />
+    <child link="Rod End Bearing1_link" />
+    <axis xyz="0 0 -1" />
+    <limit lower="-3.14" upper="3.14" effort="0" velocity="0" />
+  </joint>
+
+  <link name="Rod End Bearing2_link">
+    <inertial>
+      <origin xyz="-8.32667268468867E-17 0 -0.003" rpy="0 0 0" />
+      <mass value="0.000197936007859154" />
+      <inertia ixx="1.23423238983662E-09" ixy="9.84861916820707E-27" ixz="8.75863718352391E-24"
+               iyy="1.23423238983662E-09" iyz="2.08815001550338E-25" izz="1.55418090784429E-09" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/Rod End Bearing2_link.glb" /></geometry>
+      <material name=""><color rgba="0.502 0.502 0.502 1" /></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/Rod End Bearing2_link.glb" /></geometry>
+    </collision>
+  </link>
+  <joint name="Rod End Bearing2_joint" type="revolute">
+    <origin xyz="-0.055941 0.036872 0" rpy="0 0 0" />
+    <parent link="Rod End Bearing1_link" />
+    <child link="Rod End Bearing2_link" />
+    <axis xyz="0 0 -1" />
+    <limit lower="-3.14" upper="3.14" effort="0" velocity="0" />
+  </joint>
+
+  <link name="Rod End Bearing3_link">
+    <inertial>
+      <origin xyz="0.0299481683688649 -0.019589890702121 -0.00361422009548149" rpy="0 0 0" />
+      <mass value="0.00248577769333965" />
+      <inertia ixx="5.57713914281077E-08" ixy="4.66034767413478E-08" ixz="1.89765410999319E-21"
+               iyy="9.6532322179626E-08" iyz="-1.25156458674058E-21" izz="1.26527926607858E-07" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/Rod End Bearing3_link.glb" /></geometry>
+      <material name=""><color rgba="0.502 0.502 0.502 1" /></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/Rod End Bearing3_link.glb" /></geometry>
+    </collision>
+  </link>
+  <joint name="Rod End Bearing3_joint" type="revolute">
+    <origin xyz="-0.0214326700929562 -0.0232804253682782 -0.00699999999999581" rpy="0 0 0" />
+    <parent link="Motor_Link" />
+    <child link="Rod End Bearing3_link" />
+    <axis xyz="0 0 -1" />
+    <limit lower="-3.14" upper="3.14" effort="0" velocity="0" />
+  </joint>
+
+  <link name="Rod End Bearing4_link">
+    <inertial>
+      <origin xyz="-7.63278329429795E-17 0 -0.003" rpy="0 0 0" />
+      <mass value="0.000197936007859154" />
+      <inertia ixx="1.23423238983662E-09" ixy="-3.56075404309931E-26" ixz="8.61666590819663E-24"
+               iyy="1.23423238983662E-09" iyz="-1.22064212864968E-26" izz="1.55418090784429E-09" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/Rod End Bearing4_link.glb" /></geometry>
+      <material name=""><color rgba="0.502 0.502 0.502 1" /></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="meshes/Rod End Bearing4_link.glb" /></geometry>
+    </collision>
+  </link>
+  <joint name="Rod End Bearing4_joint" type="revolute">
+    <origin xyz="0.05607 -0.036677 0" rpy="0 0 0" />
+    <parent link="Rod End Bearing3_link" />
+    <child link="Rod End Bearing4_link" />
+    <axis xyz="0 0 -1" />
+    <limit lower="-3.14" upper="3.14" effort="0" velocity="0" />
+  </joint>
+
+</robot>
