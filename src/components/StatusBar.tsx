@@ -27,8 +27,11 @@ const StatusBar: React.FC<Props> = ({ state, isMoving }) => {
 
       {/* Left: connection info */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Typography sx={{ fontSize: '0.72rem', color: state.connected ? '#388E3C' : '#90A4AE', fontWeight: 500 }}>
-          {state.connected ? 'Connected' : 'Disconnected'}
+        <Typography sx={{
+          fontSize: '0.72rem', fontWeight: 500,
+          color: !state.connected ? '#90A4AE' : state.demo ? '#EF6C00' : '#388E3C',
+        }}>
+          {state.connected ? (state.demo ? 'Connected (Demo)' : 'Connected') : 'Disconnected'}
         </Typography>
 
         <Typography sx={{ fontSize: '0.72rem', color: '#B0BEC5' }}>

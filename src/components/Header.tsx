@@ -18,7 +18,11 @@ const TABS = ['Control', 'Modbus', 'Information'];
 const Header: React.FC<Props> = ({
   tab, setTab, state, onConnect, onEStop, onResumeEStop,
 }) => {
-  const { connected, eStop } = state;
+  const { connected, eStop, demo } = state;
+
+  const statusLabel = eStop ? 'E-STOP' : connected ? (demo ? 'Demo' : 'Online') : 'Offline';
+  const statusColor = eStop ? '#C62828' : connected ? (demo ? '#EF6C00' : '#2E7D32') : '#757575';
+  const statusDot   = eStop ? '#C62828' : connected ? (demo ? '#FB8C00' : '#43A047') : '#9E9E9E';
 
   return (
     <Box sx={{
@@ -180,13 +184,13 @@ const Header: React.FC<Props> = ({
         {/* 상태 칩 */}
         <Chip
           size="small"
-          label={eStop ? 'E-STOP' : connected ? 'Online' : 'Offline'}
+          label={statusLabel}
           icon={
             <Box sx={{
               width:        7,
               height:       7,
               borderRadius: '50%',
-              bgcolor:      eStop ? '#C62828' : connected ? '#43A047' : '#9E9E9E',
+              bgcolor:      statusDot,
               ml:           '8px !important',
               flexShrink:   0,
             }} />
@@ -195,9 +199,9 @@ const Header: React.FC<Props> = ({
             height:     28,
             fontSize:   '0.72rem',
             fontWeight: 500,
-            color:      eStop ? '#C62828' : connected ? '#2E7D32' : '#757575',
-            bgcolor:    '#fff',
-            border:     '1px solid #E0EAF4',
+            color:      statusColor,
+            bgcolor:    connected && demo && !eStop ? '#FFF8F0' : '#fff',
+            border:     `1px solid ${connected && demo && !eStop ? '#FFCC80' : '#E0EAF4'}`,
             '& .MuiChip-icon':  { mr: 0 },
             '& .MuiChip-label': { px: 1 },
           }}

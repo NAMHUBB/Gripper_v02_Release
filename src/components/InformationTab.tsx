@@ -251,7 +251,7 @@ const InformationTab: React.FC = () => {
                 MOTOR SPECIFICATION
               </Typography>
               <Typography sx={{ fontSize: '1.05rem', fontWeight: 700, color: C.dark }}>
-                EYOU PH11B-51-C
+                EYOU PH11-51-C
               </Typography>
               <Typography sx={{ fontSize: '0.72rem', color: C.gray, mt: 0.2 }}>
                 Harmonic Drive Actuator · CANopen · Integrated Brake

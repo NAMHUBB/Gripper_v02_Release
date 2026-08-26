@@ -14,6 +14,12 @@ export const setRegCache = (addr: number, val: number): void => {
   _regCache[addr] = val;
 };
 
+// ── 데모 모드 ─────────────────────────────────────────────────────────────────
+// true 이면 시리얼 통신 대신 UI 상태(시뮬레이터)를 구동한다.
+let _demo = false;
+export const setScriptDemoMode = (v: boolean): void => { _demo = v; };
+export const isScriptDemoMode = (): boolean => _demo;
+
 // ╔══════════════════════════════════════════════════════════════════╗
 // ... (사용설명서 주석 동일)
 // ╚══════════════════════════════════════════════════════════════════╝
@@ -170,8 +176,14 @@ const forceNormToReg = (pct: number): number => Math.round((pct / 100) * FORCE_M
 // ↓ 캐시 업데이트를 invoke 전에 즉시 수행 (UI 반응성 향상)
 const writeReg = async (address: number, value: number): Promise<void> => {
   _regCache[address] = value;   // ← 캐시 즉시 업데이트
+  if (_demo) return;            // 데모 모드: 통신 없음
   await invoke('modbus_write_single_register', { address, value });
 };
+
+/** 레지스터 값 → UI 슬라이더 단위(0~255) */
+const regToUiPos   = (reg: number): number => Math.round((reg / POS_CLOSE) * 255);
+const regToUiSpeed = (reg: number): number => Math.round((reg / SPEED_MAX) * 255);
+const regToUiForce = (reg: number): number => Math.round((reg / FORCE_MAX) * 255);
 
 const readInput = (address: number, quantity: number): Promise<number[]> =>
   invoke<number[]>('modbus_read_input_registers', { address, quantity });
@@ -191,21 +203,48 @@ const pollUntil = async (
   return false;
 };
 
-const triggerMove = async (pos: number, spd: number, frc: number): Promise<void> => {
+const triggerMove = async (
+  pos: number, spd: number, frc: number,
+  opts?: RunnerOptions,
+): Promise<void> => {
   await writeReg(1003, pos);
   await writeReg(1004, spd);
   await writeReg(1005, frc);
   await writeReg(1006, ACC_DEFAULT);
   await writeReg(1000, 17);
   await writeReg(1000, 1);
+
+  // 데모 모드: UI 상태를 갱신해 시뮬레이터가 지령을 따라가게 한다.
+  if (_demo && opts) {
+    opts.updateState({
+      activated:       true,
+      goToPosition:    true,
+      positionRequest: regToUiPos(pos),
+      speed:           regToUiSpeed(spd),
+      force:           regToUiForce(frc),
+    });
+  }
 };
 
-const waitMoveDone = (stopSignal: { stopped: boolean }): Promise<boolean> =>
-  pollUntil(async () => {
+const waitMoveDone = async (
+  stopSignal: { stopped: boolean },
+  opts?: RunnerOptions,
+): Promise<boolean> => {
+  if (_demo) {
+    if (!opts) return true;
+    await sleep(300);                       // 상태 반영 대기
+    return pollUntil(async () => {
+      if (stopSignal.stopped) return true;
+      const s = opts.getState();
+      return Math.abs(s.positionActual - s.positionRequest) <= 2;
+    });
+  }
+  return pollUntil(async () => {
     if (stopSignal.stopped) return true;
     const r = await readInput(2000, 1);
     return (r[0] & 0x08) === 0;
   });
+};
 
 // ── 실행기 ─────────────────────────────────────────────────────────────────────
 export interface RunnerOptions {
@@ -233,6 +272,12 @@ async function execCommands(
         case 'ACTIVATE': {
           onLog('🔌 rq_activate_and_wait() → 1000=1 (rACT=1)');
           await writeReg(1000, 1);
+          if (_demo) {
+            updateState({ activated: true, eStop: false });
+            await sleep(300);
+            onLog('  ✅ 준비 완료 (demo)');
+            break;
+          }
           const ok = await pollUntil(async () => {
             if (stopSignal.stopped) return true;
             const r = await readInput(2000, 1);
@@ -246,8 +291,8 @@ async function execCommands(
           const sp = speedNormToReg(rs.speedNorm);
           const fo = forceNormToReg(rs.forceNorm);
           onLog(`🔓 rq_open_and_wait() → 1003=${POS_OPEN}  1004=${sp}  1005=${fo}  1006=${ACC_DEFAULT}`);
-          await triggerMove(POS_OPEN, sp, fo);
-          const ok = await waitMoveDone(stopSignal);
+          await triggerMove(POS_OPEN, sp, fo, opts);
+          const ok = await waitMoveDone(stopSignal, opts);
           onLog(ok ? '  ✅ 열림 완료 (gRUN=0)' : '  ⚠️ 타임아웃');
           break;
         }
@@ -256,8 +301,8 @@ async function execCommands(
           const sp = speedNormToReg(rs.speedNorm);
           const fo = forceNormToReg(rs.forceNorm);
           onLog(`🔒 rq_close_and_wait() → 1003=${POS_CLOSE}  1004=${sp}  1005=${fo}  1006=${ACC_DEFAULT}`);
-          await triggerMove(POS_CLOSE, sp, fo);
-          const ok = await waitMoveDone(stopSignal);
+          await triggerMove(POS_CLOSE, sp, fo, opts);
+          const ok = await waitMoveDone(stopSignal, opts);
           onLog(ok ? '  ✅ 닫힘 완료 (gRUN=0)' : '  ⚠️ 타임아웃');
           break;
         }
@@ -267,8 +312,8 @@ async function execCommands(
           const sp  = speedNormToReg(rs.speedNorm);
           const fo  = forceNormToReg(rs.forceNorm);
           onLog(`📐 rq_move_and_wait_norm(${cmd.value}%) → 1003=${pos}  1004=${sp}  1005=${fo}  1006=${ACC_DEFAULT}`);
-          await triggerMove(pos, sp, fo);
-          const ok = await waitMoveDone(stopSignal);
+          await triggerMove(pos, sp, fo, opts);
+          const ok = await waitMoveDone(stopSignal, opts);
           onLog(ok ? `  ✅ ${cmd.value}% 이동 완료 (gRUN=0)` : '  ⚠️ 타임아웃');
           break;
         }
@@ -277,6 +322,7 @@ async function execCommands(
           rs.speedNorm = cmd.value;
           const sp = speedNormToReg(cmd.value);
           await writeReg(1004, sp);
+          if (_demo) updateState({ speed: regToUiSpeed(sp) });
           onLog(`⚡ rq_set_speed_norm(${cmd.value}%) → 1004=${sp} deg/s`);
           break;
         }
@@ -285,6 +331,7 @@ async function execCommands(
           rs.forceNorm = cmd.value;
           const fo = forceNormToReg(cmd.value);
           await writeReg(1005, fo);
+          if (_demo) updateState({ force: regToUiForce(fo) });
           onLog(`💪 rq_set_force_norm(${cmd.value}%) → 1005=${fo} (${(cmd.value * 3.5 / 100).toFixed(2)} Nm)`);
           break;
         }
@@ -294,6 +341,7 @@ async function execCommands(
           await writeReg(1000, 3);
           await sleep(100);
           await writeReg(1000, 1);
+          if (_demo) updateState({ activated: true, eStop: false, fault: null });
           onLog('  ✅ 리셋 완료 (1000: 3 → 1)');
           break;
         }

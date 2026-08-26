@@ -13,6 +13,8 @@ interface Props {
   state: GripperState;
   updateState: (p: Partial<GripperState>) => void;
   onAdcValuesUpdate: (adc: number[]) => void;
+  /** 데모 모드에서 App이 생성한 입력 레지스터(2000~2015) 값 */
+  demoRegisters?: Record<number, number>;
 }
 
 const BAUD_RATES: number[] = [9600, 19200, 38400, 57600, 115200, 230400];
@@ -71,7 +73,7 @@ const formatValue = (raw: number, fmt: string): string => {
   }
 };
 
-const ModbusTab: React.FC<Props> = ({ state, updateState, onAdcValuesUpdate }) => {
+const ModbusTab: React.FC<Props> = ({ state, updateState, onAdcValuesUpdate, demoRegisters }) => {
   const safeInitPort = COM_PORTS.includes(state.port) ? state.port : DEFAULT_COM_PORT;
 
   const [draft, setDraft] = useState({
@@ -101,12 +103,20 @@ const ModbusTab: React.FC<Props> = ({ state, updateState, onAdcValuesUpdate }) =
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 데모 모드: App이 생성한 시뮬레이션 레지스터 값을 그대로 반영 (통신 없음)
+  useEffect(() => {
+    if (!state.connected || !state.demo || !demoRegisters) return;
+    setLiveValues(prev => ({ ...prev, ...demoRegisters }));
+    setAdcReadError(null);
+  }, [state.connected, state.demo, demoRegisters]);
+
   useEffect(() => {
     if (!state.connected) {
       setAdcReadError(null);
       onAdcValuesUpdate([0, 0, 0, 0, 0, 0]);
       return;
     }
+    if (state.demo) return;   // 데모 모드에서는 실제 폴링을 하지 않는다
 
     const poll = async () => {
       const [inp1, inp2, hold] = await Promise.allSettled([
@@ -149,7 +159,7 @@ const ModbusTab: React.FC<Props> = ({ state, updateState, onAdcValuesUpdate }) =
     poll();
     const iv = setInterval(poll, 400);
     return () => clearInterval(iv);
-  }, [state.connected, onAdcValuesUpdate]);
+  }, [state.connected, state.demo, onAdcValuesUpdate]);
 
   const flash = (msg: string) => {
     setStatusMsg(msg);
@@ -323,12 +333,16 @@ const ModbusTab: React.FC<Props> = ({ state, updateState, onAdcValuesUpdate }) =
             )}
           </Box>
           <Chip
-            label={state.connected ? `Live · ${state.baudRate}` : 'Offline'}
+            label={
+              !state.connected ? 'Offline'
+                : state.demo   ? `Demo · ${state.baudRate}`
+                :                `Live · ${state.baudRate}`
+            }
             size="small"
             sx={{
-              bgcolor: state.connected ? '#E8F5E9' : '#F5F5F5',
-              color:   state.connected ? '#2E7D32' : '#9E9E9E',
-              border:  `1px solid ${state.connected ? '#A5D6A7' : '#E0E0E0'}`,
+              bgcolor: !state.connected ? '#F5F5F5' : state.demo ? '#FFF3E0' : '#E8F5E9',
+              color:   !state.connected ? '#9E9E9E' : state.demo ? '#EF6C00' : '#2E7D32',
+              border:  `1px solid ${!state.connected ? '#E0E0E0' : state.demo ? '#FFCC80' : '#A5D6A7'}`,
               fontSize: '0.7rem',
             }}
           />

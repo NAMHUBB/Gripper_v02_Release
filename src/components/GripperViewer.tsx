@@ -16,6 +16,8 @@ interface Props {
 
 const FRONT_ANGLE = 0.8;
 const INIT_CAMERA = { x: 0, y: 0, z: -0.35 };
+const MODEL_SIZE  = 0.2;
+const FIT_PADDING = 1.2;
 const MOTOR_MAX   = 0.81;
 const URDF_URL    = '/robot/parallelgripper_urdf_v01.urdf';
 
@@ -144,14 +146,36 @@ const GripperViewer: React.FC<Props> = ({
     });
 
     const fitRobot = (robot: any) => {
-      const box    = new THREE.Box3().setFromObject(robot);
-      const size   = box.getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
-      if (maxDim > 0) {
-        const center = box.getCenter(new THREE.Vector3());
-        robot.position.sub(center);
-        robot.position.y -= 0.03;
-        robot.scale.setScalar(0.2 / maxDim);
+      robot.updateMatrixWorld(true);
+      const initialBox = new THREE.Box3().setFromObject(robot);
+      const initialSize = initialBox.getSize(new THREE.Vector3());
+      const initialMaxDim = Math.max(initialSize.x, initialSize.y, initialSize.z);
+      if (initialMaxDim <= 0) return;
+
+      robot.scale.setScalar(MODEL_SIZE / initialMaxDim);
+      robot.updateMatrixWorld(true);
+
+      const box = new THREE.Box3().setFromObject(robot);
+      const center = box.getCenter(new THREE.Vector3());
+      robot.position.sub(center);
+      robot.updateMatrixWorld(true);
+
+      const size = box.getSize(new THREE.Vector3());
+      const verticalFov = THREE.MathUtils.degToRad(camera.fov);
+      const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * camera.aspect);
+      const distance = FIT_PADDING * Math.max(
+        size.y / (2 * Math.tan(verticalFov / 2)),
+        size.x / (2 * Math.tan(horizontalFov / 2)),
+      );
+
+      camera.position.set(0, 0, -Math.max(distance, size.z * FIT_PADDING));
+      camera.lookAt(0, 0, 0);
+      camera.updateProjectionMatrix();
+
+      if (controlsRef.current) {
+        controlsRef.current.target.set(0, 0, 0);
+        controlsRef.current.update();
+        controlsRef.current.saveState();
       }
     };
 

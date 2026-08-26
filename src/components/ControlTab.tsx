@@ -246,6 +246,15 @@ const ForceTooltip: React.FC<any> = ({ active, payload, label }) => {
   );
 };
 
+// ── 데모 모드 배지 ────────────────────────────────────────────────────────────
+const DemoBadge: React.FC = () => (
+  <Box sx={{ px: 0.7, py: '1px', borderRadius: 0.8, bgcolor: '#FFF3E0', border: '1px solid #FFCC80', lineHeight: 1 }}>
+    <Typography sx={{ fontSize: '0.55rem', fontWeight: 700, color: '#EF6C00', letterSpacing: '0.08em' }}>
+      DEMO
+    </Typography>
+  </Box>
+);
+
 const LabelSwitch: React.FC<{ label: string; checked: boolean; disabled?: boolean; onChange: (v: boolean) => void }> = ({ label, checked, disabled, onChange }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
     <Typography sx={{ fontSize: '0.72rem', color: disabled ? '#C5D0D8' : '#546E7A', fontWeight: 500 }}>{label}</Typography>
@@ -448,7 +457,10 @@ const ControlTab: React.FC<Props> = ({ state, updateState, chartData, isMoving }
 
         <Paper elevation={0} {...paperSx} sx={{ ...paperSx.sx, flex: 1, p: '12px 14px 6px' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.6 }}>
-            <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#1976D2' }}>Position Echo / Actual</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+              <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#1976D2' }}>Position Echo / Actual</Typography>
+              {state.demo && <DemoBadge />}
+            </Box>
             <Box sx={{ display: 'flex', gap: 1.2 }}>
               {[{ c: '#1976D2', l: 'Echo' }, { c: '#43A047', l: 'Actual' }].map(({ c, l }) => (
                 <Box key={l} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -476,7 +488,10 @@ const ControlTab: React.FC<Props> = ({ state, updateState, chartData, isMoving }
 
         <Paper elevation={0} {...paperSx} sx={{ ...paperSx.sx, flex: 1, p: '12px 14px 6px' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.6 }}>
-            <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#1976D2' }}>Force & ADC</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+              <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#1976D2' }}>Force &amp; ADC</Typography>
+              {state.demo && <DemoBadge />}
+            </Box>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, alignItems: 'center' }}>
               {[{ c: '#E64A19', l: 'Force' }, ...ADC_SERIES.map((s, i) => ({ c: s.color, l: `ADC${i}` }))].map(({ c, l }) => (
                 <Box key={l} sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
@@ -488,16 +503,20 @@ const ControlTab: React.FC<Props> = ({ state, updateState, chartData, isMoving }
           </Box>
           <Box sx={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={forceData} margin={{ top: 2, right: 36, left: 2, bottom: 14 }}>
+              <LineChart data={forceData} margin={{ top: 2, right: 2, left: -6, bottom: 14 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F4F7FA" vertical={false} />
                 <XAxis dataKey="time" tickFormatter={v => `${Number(v).toFixed(0)}s`} {...axisStyle}
                   label={{ value: 'Time (s)', position: 'insideBottom', offset: -4, style: { fontSize: 9, fill: '#C5D0D8' } }} />
-                <YAxis domain={['auto', 'auto']} tickCount={9} {...axisStyle} tickFormatter={v => `${v}`} />
+                {/* 좌: Force (Nm) / 우: ADC (counts) — 스케일이 달라 축을 분리 */}
+                <YAxis yAxisId="force" domain={[0, 'auto']} tickCount={7} {...axisStyle}
+                  tickFormatter={v => Number(v).toFixed(1)} />
+                <YAxis yAxisId="adc" orientation="right" domain={['auto', 'auto']} tickCount={7} {...axisStyle}
+                  tickFormatter={v => `${Math.round(Number(v))}`} />
                 <Tooltip content={<ForceTooltip />} />
-                <ReferenceLine y={0} stroke="#E0EAF4" strokeWidth={1.5} />
-                <Line type="monotoneX" dataKey="forceNm" stroke="#E64A19" strokeWidth={2} dot={false} isAnimationActive={false} name="Force" />
+                <ReferenceLine yAxisId="force" y={0} stroke="#E0EAF4" strokeWidth={1.5} />
+                <Line yAxisId="force" type="monotoneX" dataKey="forceNm" stroke="#E64A19" strokeWidth={2} dot={false} isAnimationActive={false} name="Force" />
                 {ADC_SERIES.map((s, i) => (
-                  <Line key={s.key} type="monotoneX" dataKey={s.key} stroke={s.color} strokeWidth={1.5} dot={false} isAnimationActive={false} name={`ADC${i}`} />
+                  <Line key={s.key} yAxisId="adc" type="monotoneX" dataKey={s.key} stroke={s.color} strokeWidth={1.2} dot={false} isAnimationActive={false} name={`ADC${i}`} />
                 ))}
               </LineChart>
             </ResponsiveContainer>
