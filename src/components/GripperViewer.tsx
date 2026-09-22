@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import URDFLoader from 'urdf-loader';
+import { C } from '../theme';
 
 interface Props {
   openRatio: number;
@@ -179,36 +180,58 @@ const GripperViewer: React.FC<Props> = ({
       }
     };
 
-    const loader = new URDFLoader();
-    loader.loadMeshCb = (
-      path: string,
-      manager: THREE.LoadingManager,
-      done: (mesh: THREE.Object3D) => void
-    ) => {
-      import('three/examples/jsm/loaders/GLTFLoader.js')
-        .then(({ GLTFLoader }) => {
-          new GLTFLoader(manager).load(
+    // 메시(GLB)는 URDF 파싱 뒤 비동기로 내려오므로, 카메라 피팅은 "모든 메시 로드 완료"
+    // 시점(manager.onLoad)에 한다. 고정 지연으로 피팅하면 일부 메시만 포함된 바운딩박스로
+    // 스케일이 잡혀 모델이 확대된 채 남는 경합이 생긴다.
+    //
+    // 주의: manager.onLoad 는 진행 중 항목이 0 이 되는 순간 발화한다. URDFLoader 는 파싱 중
+    // loadMeshCb 를 동기 호출하고 곧바로 URDF 항목을 itemEnd 하므로, 메시 로드가 그 안에서
+    // 동기적으로 itemStart 되어야 한다 → GLTFLoader 를 미리 import 해 두고 동기 호출한다.
+    const manager = new THREE.LoadingManager();
+    let fitted  = false;
+    let disposed = false;
+    const fitOnce = () => {
+      if (fitted || disposed || !robotRef.current) return;
+      fitted = true;
+      applySize();
+      fitRobot(robotRef.current);
+    };
+    manager.onLoad = fitOnce;
+
+    import('three/examples/jsm/loaders/GLTFLoader.js')
+      .then(({ GLTFLoader }) => {
+        if (disposed) return;
+
+        const loader = new URDFLoader(manager);
+        loader.loadMeshCb = (
+          path: string,
+          mgr: THREE.LoadingManager,
+          done: (mesh: THREE.Object3D) => void
+        ) => {
+          new GLTFLoader(mgr).load(
             path,
             (gltf) => { done(gltf.scene); },
             undefined,
             (err) => { console.warn('Mesh 로드 실패:', path, err); done(new THREE.Group()); }
           );
-        })
-        .catch(() => done(new THREE.Group()));
-    };
+        };
 
-    loader.load(
-      URDF_URL,
-      (robot: any) => {
-        robotRef.current = robot;
-        robot.rotation.x = -Math.PI / 2;
-        robot.rotation.z = FRONT_ANGLE;
-        scene.add(robot);
-        setTimeout(() => fitRobot(robot), 200);
-      },
-      undefined,
-      (err: unknown) => console.error('❌ URDF 로드 실패:', err)
-    );
+        loader.load(
+          URDF_URL,
+          (robot: any) => {
+            if (disposed) return;
+            robotRef.current = robot;
+            robot.rotation.x = -Math.PI / 2;
+            robot.rotation.z = FRONT_ANGLE;
+            scene.add(robot);
+            // 메시가 하나도 없거나 onLoad 가 오지 않는 경우를 위한 안전망
+            setTimeout(fitOnce, 3000);
+          },
+          undefined,
+          (err: unknown) => console.error('❌ URDF 로드 실패:', err)
+        );
+      })
+      .catch(err => console.error('❌ GLTFLoader 로드 실패:', err));
 
     const animate = () => {
       animFrameRef.current = requestAnimationFrame(animate);
@@ -218,6 +241,7 @@ const GripperViewer: React.FC<Props> = ({
     animate();
 
     return () => {
+      disposed = true;
       resizeObserver.disconnect();
       cancelAnimationFrame(animFrameRef.current);
       if (controlsRef.current) controlsRef.current.dispose();
@@ -252,8 +276,8 @@ const GripperViewer: React.FC<Props> = ({
   };
 
   const statusLabel = eStop ? 'E-Stop' : activated ? 'Active' : connected ? 'Online' : 'Offline';
-  const statusBg    = eStop ? '#FFEBEE' : activated ? '#E8F5E9' : connected ? '#E3F2FD' : '#F0F4F8';
-  const statusTxt   = eStop ? '#C62828' : activated ? '#2E7D32' : connected ? '#1565C0' : '#90A4AE';
+  const statusBg    = eStop ? C.dangerBg : activated ? C.okBg : connected ? C.surfaceTint : C.surfaceAlt;
+  const statusTxt   = eStop ? C.danger : activated ? C.ok : connected ? C.accent : C.muted;
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -280,10 +304,10 @@ const GripperViewer: React.FC<Props> = ({
             title={isRotating ? '회전 정지' : '자동 회전'}
             style={{
               width: 26, height: 26,
-              border: isRotating ? '1.5px solid #1976D2' : '1.5px solid #CFD8DC',
+              border: isRotating ? `1.5px solid ${C.accent}` : `1.5px solid ${C.line}`,
               borderRadius: 6,
-              backgroundColor: isRotating ? '#E3F2FD' : '#F8FAFB',
-              color: isRotating ? '#1976D2' : '#78909C',
+              backgroundColor: isRotating ? C.surfaceTint : C.surfaceAlt,
+              color: isRotating ? C.accent : C.sub,
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.2s', padding: 0,
@@ -303,10 +327,10 @@ const GripperViewer: React.FC<Props> = ({
             title="카메라 원점 복귀"
             style={{
               width: 26, height: 26,
-              border: '1.5px solid #CFD8DC',
+              border: `1.5px solid ${C.line}`,
               borderRadius: 6,
-              backgroundColor: '#F8FAFB',
-              color: '#78909C',
+              backgroundColor: C.surfaceAlt,
+              color: C.sub,
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.2s', padding: 0,
@@ -333,13 +357,13 @@ const GripperViewer: React.FC<Props> = ({
         {isMoving && (
           <div style={{
             position: 'absolute', top: 4, right: 6,
-            fontSize: 10, color: '#1976D2', fontWeight: 'bold',
+            fontSize: 10, color: C.accent, fontWeight: 'bold',
             pointerEvents: 'none',
             display: 'flex', alignItems: 'center', gap: 2,
           }}>
             <span style={{
               width: 5, height: 5, borderRadius: '50%',
-              backgroundColor: '#1976D2', display: 'inline-block',
+              backgroundColor: C.accent, display: 'inline-block',
             }} />
             Moving
           </div>

@@ -11,9 +11,12 @@
   "app": {
     "windows": [
       {
-        "title": "gripperuserinterface",
-        "width": 900,
-        "height": 800
+        "title": "Gripper Control",
+        "width": 1480,
+        "height": 920,
+        "minWidth": 1240,
+        "minHeight": 800,
+        "center": true
       }
     ],
     "security": {

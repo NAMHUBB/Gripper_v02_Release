@@ -2,19 +2,21 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ThemeProvider, createTheme, CssBaseline, GlobalStyles } from '@mui/material';
+import { C } from './theme';
 
 const theme = createTheme({
   palette: {
     mode: 'light',
-    primary: { main: '#1976D2', light: '#42A5F5', dark: '#1565C0' },
-    error:   { main: '#D32F2F' },
-    success: { main: '#388E3C' },
-    background: { default: '#F0F4F8', paper: '#FFFFFF' },
-    text: { primary: '#1A2A3A', secondary: '#5A7A9A' },
-    divider: '#E0EAF4',
+    primary: { main: C.accent, light: '#42A5F5', dark: C.title },
+    error:   { main: C.danger },
+    success: { main: C.ok },
+    warning: { main: C.warn },
+    background: { default: C.app, paper: C.surface },
+    text: { primary: C.text, secondary: C.sub, disabled: C.faint },
+    divider: C.line,
   },
   typography: {
-    fontFamily: "'Inter', 'Segoe UI', sans-serif",
+    fontFamily: C.font,
     button: { textTransform: 'none', fontWeight: 500 },
     body2: { fontSize: '0.82rem' },
   },
@@ -22,7 +24,7 @@ const theme = createTheme({
   components: {
     MuiPaper: {
       styleOverrides: {
-        root: { backgroundImage: 'none', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', border: '1px solid #E0EAF4' },
+        root: { backgroundImage: 'none', boxShadow: '0 1px 4px rgba(15,47,85,0.06)', border: `1px solid ${C.line}` },
       },
     },
     MuiCheckbox: { styleOverrides: { root: { padding: '3px 6px' } } },
@@ -30,11 +32,17 @@ const theme = createTheme({
       styleOverrides: {
         root: { height: 4 },
         thumb: { width: 14, height: 14 },
-        rail: { backgroundColor: '#CBD8E8' },
+        rail: { backgroundColor: C.lineSoft },
       },
     },
     MuiButton: {
       styleOverrides: { root: { textTransform: 'none', fontWeight: 500, fontSize: '0.82rem' } },
+    },
+    MuiMenuItem: {
+      styleOverrides: { root: { color: C.text } },
+    },
+    MuiTooltip: {
+      styleOverrides: { tooltip: { backgroundColor: C.text, fontSize: '0.68rem' } },
     },
   },
 });

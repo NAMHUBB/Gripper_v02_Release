@@ -2,7 +2,8 @@ import React from 'react';
 import { Box, Typography, Button, Chip } from '@mui/material';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import { GripperState } from '../App';
-import robotIcon from '../assets/robot_icon.png'; // 이미지 경로를 실제 위치에 맞게 수정하세요
+import { C } from '../theme';
+import robotIcon from '../assets/robot_icon.png';
 
 interface Props {
   tab:           number;
@@ -13,16 +14,17 @@ interface Props {
   onResumeEStop: () => Promise<void>;
 }
 
-const TABS = ['Control', 'Modbus', 'Information'];
+/** Dashboard: 실시간 제어/모니터 · Device: 연결 설정 + 모터/레지스터 정보 */
+const TABS = ['Dashboard', 'Device'];
 
 const Header: React.FC<Props> = ({
   tab, setTab, state, onConnect, onEStop, onResumeEStop,
 }) => {
-  const { connected, eStop, demo } = state;
+  const { connected, connecting, eStop, demo } = state;
 
-  const statusLabel = eStop ? 'E-STOP' : connected ? (demo ? 'Demo' : 'Online') : 'Offline';
-  const statusColor = eStop ? '#C62828' : connected ? (demo ? '#EF6C00' : '#2E7D32') : '#757575';
-  const statusDot   = eStop ? '#C62828' : connected ? (demo ? '#FB8C00' : '#43A047') : '#9E9E9E';
+  const statusLabel = eStop ? 'E-STOP' : connected ? (demo ? 'Demo' : 'Online') : connecting ? 'Connecting' : 'Offline';
+  const statusColor = eStop ? C.danger : connected ? (demo ? C.warn : C.ok) : C.sub;
+  const statusDot   = eStop ? C.danger : connected ? (demo ? C.warn : C.ok) : C.faint;
 
   return (
     <Box sx={{
@@ -30,15 +32,14 @@ const Header: React.FC<Props> = ({
       alignItems:   'center',
       height:       52,
       px:           2.5,
-      bgcolor:      '#fff',
-      borderBottom: '1px solid #E0EAF4',
+      bgcolor:      C.surface,
+      borderBottom: `1px solid ${C.line}`,
       flexShrink:   0,
       userSelect:   'none',
     }}>
 
       {/* ── 로고 ──────────────────────────────────────────────────── */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 1 }}>
-        {/* ### 아이콘 - 로봇 암 이미지 */}
         <Box
           component="img"
           src={robotIcon}
@@ -48,7 +49,7 @@ const Header: React.FC<Props> = ({
         <Typography sx={{
           fontSize:      '0.9rem',
           fontWeight:    700,
-          color:         '#1A2A3A',
+          color:         C.text,
           letterSpacing: '-0.01em',
           whiteSpace:    'nowrap',
         }}>
@@ -56,7 +57,7 @@ const Header: React.FC<Props> = ({
         </Typography>
       </Box>
 
-      {/* ── 탭 네비게이션 (로고 바로 옆) ─────────────────────────── */}
+      {/* ── 탭 네비게이션 ─────────────────────────────────────────── */}
       <Box sx={{ display: 'flex', alignItems: 'stretch', height: '100%' }}>
         {TABS.map((label, i) => {
           const active = tab === i;
@@ -72,9 +73,9 @@ const Header: React.FC<Props> = ({
                 position:   'relative',
                 fontSize:   '0.82rem',
                 fontWeight: active ? 700 : 500,
-                color:      active ? '#1976D2' : '#78909C',
+                color:      active ? C.accent : C.sub,
                 transition: 'color 0.15s',
-                '&:hover':  { color: '#1976D2' },
+                '&:hover':  { color: C.accent },
                 '&::after': {
                   content:      '""',
                   position:     'absolute',
@@ -82,7 +83,7 @@ const Header: React.FC<Props> = ({
                   left:         0,
                   right:        0,
                   height:       2,
-                  bgcolor:      active ? '#1976D2' : 'transparent',
+                  bgcolor:      active ? C.accent : 'transparent',
                   borderRadius: '2px 2px 0 0',
                 },
               }}
@@ -93,18 +94,22 @@ const Header: React.FC<Props> = ({
         })}
       </Box>
 
-      {/* ── 가운데 여백 ───────────────────────────────────────────── */}
       <Box sx={{ flex: 1 }} />
 
-      {/* ── 우측: Connect / E-STOP / 상태 ────────────────────────── */}
+      {/* ── 우측: 포트 · Connect / E-STOP / 상태 ─────────────────── */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+
+        {/* 현재 포트 · baud (Device 탭에서 변경) */}
+        <Typography sx={{ fontSize: '0.7rem', color: C.muted, fontFamily: C.mono, mr: 0.5, maxWidth: 260 }} noWrap title={state.port}>
+          {state.port || 'no port'} · {state.baudRate} · ID {state.slaveId}
+        </Typography>
 
         {/* Connect / Disconnect */}
         <Button
           size="small"
           variant="contained"
           onClick={onConnect}
-          disabled={eStop}
+          disabled={eStop || connecting}
           disableElevation
           sx={{
             fontSize:     '0.78rem',
@@ -112,20 +117,20 @@ const Header: React.FC<Props> = ({
             height:       34,
             px:           2.2,
             borderRadius: 1.5,
-            bgcolor:      connected ? '#E3F2FD' : '#1976D2',
-            color:        connected ? '#1976D2' : '#fff',
-            border:       connected ? '1px solid #90CAF9' : 'none',
+            bgcolor:      connected ? C.surfaceTint : C.accent,
+            color:        connected ? C.accent : '#fff',
+            border:       connected ? `1px solid ${C.line}` : 'none',
             '&:hover': {
-              bgcolor:   connected ? '#BBDEFB' : '#1565C0',
+              bgcolor:   connected ? '#D6E6F7' : C.title,
               boxShadow: 'none',
             },
             '&.Mui-disabled': {
-              bgcolor: '#F5F5F5',
-              color:   '#BDBDBD',
+              bgcolor: C.surfaceAlt,
+              color:   C.faint,
             },
           }}
         >
-          {connected ? 'Disconnect' : 'Connect'}
+          {connected ? 'Disconnect' : connecting ? 'Connecting…' : 'Connect'}
         </Button>
 
         {/* E-STOP / Resume */}
@@ -142,12 +147,9 @@ const Header: React.FC<Props> = ({
               px:           1.8,
               borderRadius: 1.5,
               borderColor:  '#E57373',
-              color:        '#C62828',
-              bgcolor:      '#FFEBEE',
-              '&:hover': {
-                bgcolor:     '#FFCDD2',
-                borderColor: '#C62828',
-              },
+              color:        C.danger,
+              bgcolor:      C.dangerBg,
+              '&:hover': { bgcolor: '#FFCDD2', borderColor: C.danger },
             }}
           >
             Resume
@@ -158,9 +160,7 @@ const Header: React.FC<Props> = ({
             variant="outlined"
             onClick={onEStop}
             disableElevation
-            startIcon={
-              <PowerSettingsNewIcon sx={{ fontSize: '14px !important', color: '#E57373' }} />
-            }
+            startIcon={<PowerSettingsNewIcon sx={{ fontSize: '14px !important', color: '#E57373' }} />}
             sx={{
               fontSize:     '0.75rem',
               fontWeight:   600,
@@ -171,10 +171,7 @@ const Header: React.FC<Props> = ({
               color:        '#E57373',
               bgcolor:      '#FFF5F5',
               '& .MuiButton-startIcon': { mr: 0.5 },
-              '&:hover': {
-                bgcolor:     '#FFEBEE',
-                borderColor: '#EF9A9A',
-              },
+              '&:hover': { bgcolor: C.dangerBg, borderColor: '#EF9A9A' },
             }}
           >
             E-STOP
@@ -187,21 +184,17 @@ const Header: React.FC<Props> = ({
           label={statusLabel}
           icon={
             <Box sx={{
-              width:        7,
-              height:       7,
-              borderRadius: '50%',
-              bgcolor:      statusDot,
-              ml:           '8px !important',
-              flexShrink:   0,
+              width: 7, height: 7, borderRadius: '50%',
+              bgcolor: statusDot, ml: '8px !important', flexShrink: 0,
             }} />
           }
           sx={{
             height:     28,
             fontSize:   '0.72rem',
-            fontWeight: 500,
+            fontWeight: 600,
             color:      statusColor,
-            bgcolor:    connected && demo && !eStop ? '#FFF8F0' : '#fff',
-            border:     `1px solid ${connected && demo && !eStop ? '#FFCC80' : '#E0EAF4'}`,
+            bgcolor:    connected && demo && !eStop ? C.warnBg : C.surface,
+            border:     `1px solid ${connected && demo && !eStop ? C.warnLine : C.line}`,
             '& .MuiChip-icon':  { mr: 0 },
             '& .MuiChip-label': { px: 1 },
           }}
